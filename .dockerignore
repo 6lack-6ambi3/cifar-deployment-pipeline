@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Project artifacts not needed in the image
+data/
+*.png
+logs/
+tests/
+
+# Dev/CI files
+.github/
+terraform/
+ansible/
+.git/
+.gitignore
+README.md
+.env
+.DS_Store
+
+# Keep model/ and app/ — those ARE copied in
