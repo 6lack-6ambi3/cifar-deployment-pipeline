@@ -1,0 +1,57 @@
+# Ansible playbook to deploy the CIFAR-10 API on a fresh Ubuntu host.
+# Installation of Docker, pulls the CI/CD-built image and runs the container.
+# Usuage: ansible-playbook -i inventory.ini deploy.yml
+
+- name: Deploy CIFAR-10 API
+  hosts: cifar_servers
+  become: true
+
+  vars:
+    image_name: "6lack6ambi3/cifar-api:latest"
+    container_name: "cifar-api"
+    host_port: 8000
+
+  tasks:
+    - name: Install Docker
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: true
+    
+    - name: Install Docker SDK for Python
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: Pull CIFAR-10 API Docker image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        source: pull
+
+    - name: Run the CIFAR-10 API container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image_name }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ host_port }}:8000"
+
+    - name: Wait for the API to become healthy
+      uri:
+        url: "http://localhost:{{ host_port }}/health"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 12
+      delay: 5

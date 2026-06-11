@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TASKS - Get Things Done</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #e8ff47;
+      --accent2: #ff4747;
+      --text: #f0efe8;
+      --muted: #555;
+      --done: #333;
+    }
+ 
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+    }
+ 
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px 20px 80px;
+      min-height: 100vh;
+      background-image: radial-gradient(circle at 20% 20%, #1a1a00 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, #1a0000 0%, transparent 50%);
+    }
+ 
+    .app {
+      width: 100%;
+      max-width: 640px;
+    }
+ 
+    /* Header */
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+ 
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(64px, 14vw, 100px);
+      line-height: 0.85;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-shadow: 4px 4px 0 #5a6300;
+    }
+ 
+    .stats {
+      text-align: right;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.8;
+    }
+ 
+    .stats strong {
+      color: var(--text);
+      font-size: 22px;
+      display: block;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 1px;
+    }
+ 
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+ 
+    .filter-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+ 
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 500;
+    }
+ 
+    /* Add Task */
+    .add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+ 
+    .task-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      padding: 14px 18px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+ 
+    .task-input::placeholder { color: var(--muted); }
+    .task-input:focus { border-color: var(--accent); }
+ 
+    .priority-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      padding: 0 14px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: center;
+    }
+ 
+    .add-btn {
+      background: var(--accent);
+      border: none;
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      padding: 0 24px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+ 
+    .add-btn:hover { background: #fff; transform: translateY(-1px); }
+    .add-btn:active { transform: translateY(0); }
+ 
+    /* Task List */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+ 
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      background: var(--surface);
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      animation: slideIn 0.25s ease forwards;
+    }
+ 
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+ 
+    .task-item:hover { background: #1e1e1e; }
+ 
+    .task-item.priority-high  { border-left-color: var(--accent2); }
+    .task-item.priority-mid   { border-left-color: var(--accent); }
+    .task-item.priority-low   { border-left-color: var(--muted); }
+ 
+    .task-item.done {
+      opacity: 0.45;
+      border-left-color: var(--done) !important;
+    }
+ 
+    /* Checkbox */
+    .check {
+      width: 20px;
+      height: 20px;
+      border: 1px solid var(--border);
+      background: none;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      position: relative;
+    }
+ 
+    .check:hover { border-color: var(--accent); }
+ 
+    .check.checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+ 
+    .check.checked::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border-right: 2px solid #000;
+      border-bottom: 2px solid #000;
+      transform: rotate(40deg) translate(-1px, -1px);
+    }
+ 
+    /* Task text */
+    .task-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.4;
+      letter-spacing: 0.01em;
+      transition: all 0.2s;
+    }
+ 
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+ 
+    /* Priority badge */
+    .priority-badge {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border: 1px solid currentColor;
+      flex-shrink: 0;
+    }
+ 
+    .priority-high .priority-badge  { color: var(--accent2); }
+    .priority-mid  .priority-badge  { color: var(--accent); }
+    .priority-low  .priority-badge  { color: var(--muted); }
+ 
+    /* Delete */
+    .del-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 4px;
+      transition: color 0.15s;
+      flex-shrink: 0;
+      font-family: monospace;
+    }
+ 
+    .del-btn:hover { color: var(--accent2); }
+ 
+    /* Empty */
+    .empty {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+ 
+    .empty-icon {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: var(--border);
+      display: block;
+      margin-bottom: 12px;
+    }
+ 
+    /* Progress bar */
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+ 
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.4s ease;
+    }
+ 
+    /* Footer */
+    .footer {
+      margin-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+ 
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+ 
+    .clear-btn:hover { color: var(--accent2); text-decoration: underline; }
+ 
+    /* Transitions */
+    .list-enter-active, .list-leave-active { transition: all 0.2s ease; }
+    .list-enter-from { opacity: 0; transform: translateX(-12px); }
+    .list-leave-to   { opacity: 0; transform: translateX(12px); max-height: 0; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="app">
+        <div class="header">
+            <div class="title">TASKS</div>
+            <div class="stats">
+                <strong>{{ done }}/{{ total }}</strong>
+                COMPLETED
+                
+        </div>
+    </div>
+</body>
+</html>
